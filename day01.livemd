@@ -1,0 +1,73 @@
+# Advent of Code 2021 - Day 1
+
+## Puzzle description
+
+[Sonar Sweep](https://adventofcode.com/2021/day/1).
+
+## The sonar sweep report
+
+```elixir
+defmodule Load do
+  def input do
+    File.read!("day01.txt")
+    |> String.split("\n", trim: true)
+    |> Enum.map(&String.to_integer/1)
+  end
+end
+```
+
+## Figure out how quickly the depth increases
+
+Count the number of times a depth measurement increases from the previous measurement.
+
+```elixir
+defmodule Part1 do
+  def scan_depth([_], count) do
+    count
+  end
+
+  def scan_depth([prev_depth, new_depth | _] = depths, count) do
+    count = if new_depth > prev_depth, do: count + 1, else: count
+    scan_depth(tl(depths), count)
+  end
+end
+
+Part1.scan_depth(Load.input(), 0)
+```
+
+## Now consider sums of a three-measurement sliding window
+
+Count the number of times the sum of measurements in this sliding window increases from the previous sum.
+
+```elixir
+defmodule Part2 do
+  def scan_depth_three(depths) do
+    Enum.chunk_every(depths, 3, 1)
+    |> Enum.map(&Enum.sum/1)
+    |> Part1.scan_depth(0)
+  end
+end
+
+Part2.scan_depth_three(Load.input())
+```
+
+## Check that my answers are still correct after refactoring
+
+```elixir
+ExUnit.start(autorun: false)
+
+defmodule Test do
+  use ExUnit.Case, async: true
+  @input Load.input()
+
+  test "part1" do
+    assert Part1.scan_depth(@input, 0) == 1529
+  end
+
+  test "part2" do
+    assert Part2.scan_depth_three(@input) == 1567
+  end
+end
+
+ExUnit.run()
+```
