@@ -1,0 +1,111 @@
+# Advent of Code 2021 - Day 2
+
+## Puzzle description
+
+[Dive!](https://adventofcode.com/2021/day/2)
+
+## The submarine seems to already have a planned course
+
+```elixir
+defmodule Load do
+  def input do
+    File.read!("day02.txt")
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn line ->
+      [direction, value] = String.split(line)
+      [direction, String.to_integer(value)]
+    end)
+  end
+end
+```
+
+## Figure out where it's going
+
+Calculate the horizontal position and depth you would have after following the planned course.
+
+Your horizontal position and depth both start at _0_.
+
+* _forward X_ increases the horizontal position by X units.
+* _down X_ increases the depth by X units.
+* _up X_ decreases the depth by X units.
+
+And **multiply your final horizontal position by your final depth**.
+
+```elixir
+defmodule Part1 do
+  def final_position() do
+    input = Load.input()
+
+    final_position =
+      Enum.reduce(input, %{horizontal: 0, depth: 0}, fn [direction, value], position ->
+        case direction do
+          "forward" -> Map.update!(position, :horizontal, &(&1 + value))
+          "down" -> Map.update!(position, :depth, &(&1 + value))
+          "up" -> Map.update!(position, :depth, &(&1 - value))
+        end
+      end)
+
+    final_position.horizontal * final_position.depth
+  end
+end
+
+Part1.final_position()
+```
+
+## As usual, you discover that the process is actually more complicated and the commands mean something entirely different
+
+You'll also need to track a third value, **aim**, which also starts at _0_.
+
+* _down X_ increases your aim by X units.
+* _up X_ decreases your aim by X units.
+* _forward X_:
+  * increases your horizontal position by X units.
+  * increases your depth by your aim multiplied by X.
+
+```elixir
+defmodule Part2 do
+  def final_position() do
+    input = Load.input()
+
+    final_position =
+      Enum.reduce(input, %{horizontal: 0, depth: 0, aim: 0}, fn [direction, value], position ->
+        case direction do
+          "forward" ->
+            position
+            |> Map.update!(:horizontal, &(&1 + value))
+            |> Map.update!(:depth, &(&1 + position.aim * value))
+
+          "down" ->
+            Map.update!(position, :aim, &(&1 + value))
+
+          "up" ->
+            Map.update!(position, :aim, &(&1 - value))
+        end
+      end)
+
+    final_position.horizontal * final_position.depth
+  end
+end
+
+Part2.final_position()
+```
+
+## Check that my answers are still correct after refactoring
+
+```elixir
+ExUnit.start(autorun: false)
+
+defmodule Test do
+  use ExUnit.Case, async: true
+
+  test "part1" do
+    assert Part1.final_position() == 1_762_050
+  end
+
+  test "part2" do
+    assert Part2.final_position() == 1_855_892_637
+  end
+end
+
+ExUnit.run()
+```
