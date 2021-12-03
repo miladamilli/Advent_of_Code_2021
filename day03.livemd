@@ -1,0 +1,157 @@
+# Advent of Code 2021 - Day 3
+
+## Puzzle description
+
+[Binary Diagnostic](https://adventofcode.com/2021/day/3)
+
+## The diagnostic report of the submarine
+
+List of binary numbers which, when decoded properly, can tell you many useful things about the conditions of the submarine.
+
+```elixir
+defmodule Load do
+  def input do
+    File.read!("day03.txt")
+    |> String.split("\n", trim: true)
+  end
+end
+```
+
+## Check the power consumption
+
+You need to use the binary numbers in the diagnostic report to **generate two new binary numbers** (called the _gamma rate_ and the _epsilon rate_).
+
+## Generating the Gamma rate
+
+Each bit in the gamma rate can be determined by **finding the most common bit in the corresponding position** of all numbers in the diagnostic report.
+
+```elixir
+defmodule Part1_gamma do
+  def gamma_rate() do
+    input = Load.input()
+    line_length = String.length(hd(input))
+    most_common_bit(input, line_length, 0, [])
+  end
+
+  defp most_common_bit(_data, position, position, result) do
+    result |> Enum.join() |> String.to_integer(2)
+  end
+
+  defp most_common_bit(data, length, position, result) do
+    bits =
+      Enum.map(data, fn line -> String.at(line, position) end)
+      |> Enum.frequencies()
+
+    {bit, _} = Enum.max_by(bits, fn {_bit, count} -> count end)
+    most_common_bit(data, length, position + 1, result ++ [bit])
+  end
+end
+```
+
+## Generating the Epsilon rate
+
+**The least common bit** from each position is used.
+
+```elixir
+defmodule Part1_epsilon do
+  def epsilon_rate do
+    input = Load.input()
+    line_length = String.length(hd(input))
+    least_common_bit(input, line_length, 0, [])
+  end
+
+  defp least_common_bit(_data, position, position, result) do
+    result |> Enum.join() |> String.to_integer(2)
+  end
+
+  defp least_common_bit(data, length, position, result) do
+    bits =
+      Enum.map(data, fn line -> String.at(line, position) end)
+      |> Enum.frequencies()
+
+    {bit, _} = Enum.min_by(bits, fn {_bit, count} -> count end)
+    least_common_bit(data, length, position + 1, result ++ [bit])
+  end
+end
+```
+
+## The power consumption
+
+Multiplying the gamma rate by the epsilon rate.
+
+```elixir
+defmodule Part1_power_consumption do
+  def check do
+    Part1_gamma.gamma_rate() * Part1_epsilon.epsilon_rate()
+  end
+end
+
+Part1_power_consumption.check()
+```
+
+## Verify the life support rating
+
+Life support rating can be determined by multiplying the **oxygen generator rating** by the **CO2 scrubber rating**.
+
+```elixir
+defmodule Part2 do
+  def life_support_rating() do
+    input = Load.input() |> Enum.map(&String.codepoints/1)
+
+    find_rating(input, &oxygen_generator_criteria/1, "1", 0) *
+      find_rating(input, &co2_scrubber_criteria/1, "0", 0)
+  end
+
+  defp oxygen_generator_criteria(values) do
+    {bit, _} = Enum.max_by(values, fn {_bit, count} -> count end)
+    bit
+  end
+
+  defp co2_scrubber_criteria(values) do
+    {bit, _} = Enum.min_by(values, fn {_bit, count} -> count end)
+    bit
+  end
+
+  defp find_rating([result], _criteria, _default_value, _position) do
+    result |> Enum.join() |> String.to_integer(2)
+  end
+
+  defp find_rating(data, criteria, default_value, position) do
+    values =
+      data
+      |> Enum.map(fn line -> Enum.at(line, position) end)
+      |> Enum.frequencies()
+
+    common =
+      cond do
+        values["0"] == values["1"] -> default_value
+        true -> criteria.(values)
+      end
+
+    new_data = Enum.filter(data, fn line -> Enum.at(line, position) == common end)
+    find_rating(new_data, criteria, default_value, position + 1)
+  end
+end
+
+Part2.life_support_rating()
+```
+
+## Check that my answers are still correct after refactoring
+
+```elixir
+ExUnit.start(autorun: false)
+
+defmodule Test do
+  use ExUnit.Case, async: true
+
+  test "part1" do
+    assert Part1_power_consumption.check() == 738_234
+  end
+
+  test "part2" do
+    assert Part2.life_support_rating() == 3_969_126
+  end
+end
+
+ExUnit.run()
+```
