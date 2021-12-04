@@ -1,0 +1,131 @@
+# Advent of Code 2021 - Day 4
+
+## Puzzle description
+
+[Giant Squid](https://adventofcode.com/2021/day/4)
+
+## Giant squid wants to play bingo with you
+
+Bingo is played on a set of boards each consisting of a 5x5 grid of numbers. 
+Numbers are chosen at random, and the chosen number is marked on all boards on which it appears.
+If all numbers in any row or any column of a board are marked, that board wins.
+
+## The submarine's bingo subsystem generates a random order in which to draw numbers and a random set of boards
+
+```elixir
+numbers = File.read!("day04_numbers.txt") |> String.trim() |> String.split(",")
+```
+
+```elixir
+boards =
+  File.read!("day04_boards.txt")
+  |> String.split("\n\n", trim: true)
+  |> Enum.map(&String.split(&1, "\n", trim: true))
+  |> Enum.map(&Enum.map(&1, fn board_line -> String.split(board_line, " ", trim: true) end))
+```
+
+## Figure out which board will win first
+
+```elixir
+defmodule Part1 do
+  def play([n | numbers], boards) do
+    boards_marked =
+      Enum.map(boards, fn board ->
+        Enum.map(board, fn row ->
+          Enum.map(row, fn board_n -> if board_n != n, do: board_n, else: "X" end)
+        end)
+      end)
+
+    winning_board = Enum.filter(boards_marked, fn board -> Board.winning?(board) end)
+
+    if winning_board == [] do
+      play(numbers, boards_marked)
+    else
+      {n, winning_board}
+    end
+  end
+end
+```
+
+```elixir
+defmodule Board do
+  def winning?(board) do
+    transposed_board = Enum.zip_with(board, &Function.identity/1)
+
+    Enum.any?(board, &complete_line?/1) or
+      Enum.any?(transposed_board, &complete_line?/1)
+  end
+
+  defp complete_line?(line) do
+    Enum.all?(line, fn char -> char == "X" end)
+  end
+end
+```
+
+Multiply the **sum of all unmarked numbers** on that board 
+by the **number that was just called** when the board won
+to get the **final score**.
+
+```elixir
+{number1, winning_board} = Part1.play(numbers, boards)
+
+defmodule Final do
+  def score(number, board) do
+    board =
+      board
+      |> List.flatten()
+      |> Enum.filter(fn x -> x != "X" end)
+      |> Enum.map(&String.to_integer/1)
+      |> Enum.sum()
+
+    board * String.to_integer(number)
+  end
+end
+
+Final.score(number1, winning_board)
+```
+
+## Figure out which board will win last
+
+```elixir
+defmodule Part2 do
+  def play([n | numbers], boards) do
+    boards_marked =
+      Enum.map(boards, fn board ->
+        Enum.map(board, fn row ->
+          Enum.map(row, fn board_n -> if board_n != n, do: board_n, else: "X" end)
+        end)
+      end)
+
+    boards_not_winning = Enum.reject(boards_marked, fn b -> Board.winning?(b) end)
+
+    cond do
+      length(boards_not_winning) >= 1 ->
+        play(numbers, boards_not_winning)
+
+      true ->
+        last_board = Enum.at(boards_marked, 0)
+
+        unless Board.winning?(last_board) do
+          play(numbers, boards_marked)
+        else
+          {n, last_board}
+        end
+    end
+  end
+end
+```
+
+Get it's final score.
+
+```elixir
+{number2, last_board} = Part2.play(numbers, boards)
+
+Final.score(number2, last_board)
+```
+
+## Check that my answers are still correct after refactoring
+
+```elixir
+Final.score(number1, winning_board) == 14093 && Final.score(number2, last_board) == 17388
+```
