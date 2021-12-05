@@ -1,0 +1,97 @@
+# Advent of Code 2021 - Day 5
+
+## Puzzle description
+
+[Hydrothermal Venture](https://adventofcode.com/2021/day/5)
+
+## You come across a field of hydrothermal vents on the ocean floor
+
+They tend to form in **lines**.
+
+```elixir
+vent_lines =
+  File.read!("day05.txt")
+  |> String.split("\n", trim: true)
+  |> Enum.map(fn line ->
+    [point1, point2] = String.split(line, " -> ")
+    [x1, y1] = String.split(point1, ",")
+    [x2, y2] = String.split(point2, ",")
+
+    {[String.to_integer(x1), String.to_integer(y1)],
+     [String.to_integer(x2), String.to_integer(y2)]}
+  end)
+```
+
+## Avoid the most dangerous areas
+
+For now, only consider **horizontal and vertical lines**: 
+lines where either _y1 = y2_ or _x1 = x2_.
+
+```elixir
+defmodule Line do
+  def horizontal_or_vertical?({[x1, y1], [x2, y2]}), do: y1 == y2 or x1 == x2
+end
+
+orthogonal_lines = Enum.filter(vent_lines, &Line.horizontal_or_vertical?/1)
+```
+
+Determine the number of points **where at least two lines overlap.**
+
+```elixir
+defmodule Vents do
+  def points([{[x1, y1], [x2, y2]} | lines], points) do
+    new_points = for x <- x1..x2, y <- y1..y2, do: [x, y]
+    points(lines, points ++ new_points)
+  end
+
+  def points([], points) do
+    points
+  end
+end
+
+defmodule Lines do
+  def count_overlapping(lines) do
+    lines
+    |> Enum.frequencies()
+    |> Enum.filter(fn {_point, count} -> count >= 2 end)
+    |> Enum.count()
+  end
+end
+
+overlapping_orthogonal =
+  orthogonal_lines
+  |> Vents.points([])
+  |> Lines.count_overlapping()
+```
+
+## Now consider diagonal lines as well
+
+```elixir
+defmodule Vents2 do
+  def points([{[x1, y1], [x2, y2]} | lines], points) do
+    new_points =
+      if y1 == y2 or x1 == x2 do
+        for x <- x1..x2, y <- y1..y2, do: [x, y]
+      else
+        Enum.zip_with(x1..x2, y1..y2, fn x, y -> [x, y] end)
+      end
+
+    points(lines, points ++ new_points)
+  end
+
+  def points([], points) do
+    points
+  end
+end
+
+overlapping_with_diagonal =
+  vent_lines
+  |> Vents2.points([])
+  |> Lines.count_overlapping()
+```
+
+## Check that my answers are still correct after refactoring
+
+```elixir
+overlapping_orthogonal == 4728 && overlapping_with_diagonal == 17717
+```
