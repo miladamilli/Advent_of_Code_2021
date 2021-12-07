@@ -1,0 +1,82 @@
+# Advent of Code 2021 - Day 7
+
+## Puzzle description
+
+[The Treachery of Whales](https://adventofcode.com/2021/day/7)
+
+## A giant whale has decided your submarine is its next meal
+
+Suddenly, a swarm of crabs (each in its own tiny submarine) zooms in to rescue you!
+
+```elixir
+crabs_positions =
+  File.read!("day07.txt")
+  |> String.trim()
+  |> String.split(",")
+  |> Enum.map(&String.to_integer/1)
+```
+
+The crab submarines all need to be aligned before they'll have enough power to blast 
+a large enough hole in the ocean floor for your submarine to get through (sensors indicate a massive underground cave system).
+
+Crab submarines **can only move horizontally** and have **limited fuel**, 
+so you need to find a way to make all of their horizontal positions match 
+while requiring them to spend as little fuel as possible.
+
+```elixir
+defmodule Part1 do
+  def align_crabs(crabs) do
+    min = Enum.min(crabs)
+    max = Enum.max(crabs)
+
+    Enum.map(min..max, fn c ->
+      Enum.map(crabs, fn p -> abs(p - c) end)
+      |> Enum.sum()
+    end)
+    |> Enum.min()
+  end
+end
+```
+
+Determine the horizontal position that the crabs can align to using the least fuel possible. 
+**How much fuel must they spend to align to that position?**
+
+```elixir
+Part1.align_crabs(crabs_positions)
+```
+
+## Perhaps you (again) misunderstood?
+
+Crab submarine engines don't burn fuel at a constant rate.
+
+Instead, **each change of 1 step** in horizontal position **costs 1 more unit of fuel than the last**.
+
+As each crab moves, moving further becomes more expensive.
+
+```elixir
+defmodule Part2 do
+  def align_crabs(crabs) do
+    min = Enum.min(crabs)
+    max = Enum.max(crabs)
+
+    Enum.map(min..max, fn c ->
+      Enum.map(crabs, fn p ->
+        distance = abs(p - c)
+        Enum.sum(0..distance)
+      end)
+      |> Enum.sum()
+    end)
+    |> Enum.min()
+  end
+end
+```
+
+```elixir
+Part2.align_crabs(crabs_positions)
+```
+
+## Check
+
+```elixir
+Part1.align_crabs(crabs_positions) == 352_331 && Part2.align_crabs(crabs_positions) == 99_266_250
+```
