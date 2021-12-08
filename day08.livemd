@@ -1,0 +1,120 @@
+# Advent of Code 2021 - Day 8
+
+## Puzzle description
+
+[Seven Segment Search](https://adventofcode.com/2021/day/8)
+
+## The four-digit seven-segment displays in your submarine are malfunctioning
+
+Everything is mixed up!
+
+For each display, you watch the changing signals for a while, 
+make a note of all **ten unique signal patterns** you see, 
+and then write down a single **four digit output value**.
+
+```elixir
+input =
+  File.read!("day08.txt")
+  |> String.split("\n", trim: true)
+  |> Enum.map(&String.split(&1, [" ", " | "]))
+```
+
+## For now, focus on the easy digits
+
+```elixir
+defmodule Part1 do
+  def count1478(input) do
+    unique_number_of_segments = [2, 3, 4, 7]
+
+    Enum.map(input, fn y -> Enum.take(y, -4) end)
+    |> Enum.map(
+      &Enum.filter(&1, fn output -> String.length(output) in unique_number_of_segments end)
+    )
+    |> List.flatten()
+    |> length
+  end
+end
+```
+
+## How many times do digits 1, 4, 7, or 8 appear?
+
+```elixir
+Part1.count1478(input)
+```
+
+## Now determine the remaining digits
+
+For each entry, determine all of the wire/segment connections and decode the four-digit 
+output values.
+
+```elixir
+defmodule Part2 do
+  def output_values_sum(input) do
+    Enum.map(input, fn entry ->
+      entry
+      |> decode_digits()
+      |> Enum.take(-4)
+      |> Integer.undigits()
+    end)
+    |> Enum.sum()
+  end
+
+  defp decode_digits(output) do
+    output = Enum.map(output, fn value -> String.graphemes(value) end)
+
+    digit_1 = get_output_of_length(output, 2)
+    digit_4 = get_output_of_length(output, 4)
+    digit_7 = get_output_of_length(output, 3)
+
+    Enum.map(output, fn o ->
+      case length(o) do
+        2 ->
+          1
+
+        3 ->
+          7
+
+        4 ->
+          4
+
+        7 ->
+          8
+
+        6 ->
+          cond do
+            contains_digit?(o, digit_4) -> 9
+            contains_digit?(o, digit_1) -> 0
+            true -> 6
+          end
+
+        5 ->
+          cond do
+            contains_digit?(o, digit_7) -> 3
+            length(o -- (digit_4 ++ digit_7)) == 2 -> 2
+            true -> 5
+          end
+      end
+    end)
+  end
+
+  defp get_output_of_length(output, length) do
+    Enum.find(output, fn o -> length(o) == length end)
+  end
+
+  defp contains_digit?(output, digit) do
+    MapSet.subset?(MapSet.new(digit), MapSet.new(output))
+  end
+end
+```
+
+**What do you get if you add up all of the output values?**
+
+```elixir
+Part2.output_values_sum(input)
+```
+
+## Check
+
+```elixir
+Part1.count1478(input) == 362 && Part2.output_values_sum(input) == 1_020_159
+```
