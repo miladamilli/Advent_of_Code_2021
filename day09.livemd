@@ -1,0 +1,120 @@
+# Advent of Code 2021 - Day 9
+
+## Puzzle description
+
+[Smoke Basin](https://adventofcode.com/2021/day/9)
+
+## Heightmap of the floor of the nearby caves
+
+```elixir
+heightmap =
+  File.read!("day09.txt")
+  |> String.split("\n", trim: true)
+  |> Enum.map(fn line -> String.codepoints(line) |> Enum.map(&String.to_integer/1) end)
+
+lines_nr = length(heightmap) - 1
+chars_nr = length(hd(heightmap)) - 1
+
+map =
+  for y <- 0..lines_nr, x <- 0..chars_nr, into: %{} do
+    height = heightmap |> Enum.at(y) |> Enum.at(x)
+    {{x, y}, height}
+  end
+```
+
+## Model how the smoke flows through the caves - find the low points
+
+Smoke flows to the lowest point of the area it's in - **the low points**.
+
+Low points are locations that are lower than any of its adjacent locations.
+
+Most locations have four adjacent locations (up, down, left, and right).
+
+**What is the sum of the risk levels of all low points on your heightmap?**
+
+```elixir
+defmodule Part1 do
+  def find_low_points(map) do
+    Enum.filter(map, fn {point, _height} ->
+      Enum.all?(adjacent(point), fn adj_point ->
+        map[adj_point] > map[point] or map[adj_point] == nil
+      end)
+    end)
+  end
+
+  def adjacent({x, y}) do
+    [{x, y + 1}, {x, y - 1}, {x - 1, y}, {x + 1, y}]
+  end
+end
+
+map
+|> Part1.find_low_points()
+|> Enum.map(fn {{_x, _y}, height} -> height + 1 end)
+|> Enum.sum()
+```
+
+## Find the largest basins
+
+A basin is all locations that eventually flow downward to a single low point.
+
+**Find the three largest basins and multiply their sizes together.**
+
+```elixir
+defmodule Part2 do
+  def basins_size(map, basins) do
+    map_finished? = Enum.all?(Map.values(map), &(&1 == 9))
+    unless map_finished?, do: find_basin(map, basins), else: basins
+  end
+
+  defp find_basin(map, basins) do
+    first_point = random_first_point(map)
+    map = Map.delete(map, first_point)
+    {map, new_basin} = find_lowpoints_around([first_point], map, 1)
+    basins_size(map, [new_basin | basins])
+  end
+
+  defp random_first_point(map) do
+    {point, _} = Enum.random(map)
+    if map[point] != 9, do: point, else: random_first_point(map)
+  end
+
+  defp find_lowpoints_around([point | points], map, basin) do
+    adjacent_points = Part1.adjacent(point) |> Enum.filter(fn p -> map[p] not in [9, nil] end)
+    new_map = Enum.reduce(adjacent_points, map, fn p, m -> Map.delete(m, p) end)
+    find_lowpoints_around(points ++ adjacent_points, new_map, basin + Enum.count(adjacent_points))
+  end
+
+  defp find_lowpoints_around([], map, basin) do
+    {map, basin}
+  end
+end
+
+map |> Part2.basins_size([]) |> Enum.sort(:desc) |> Enum.take(3) |> Enum.product()
+```
+
+## Check that the results are still correct after refactoring
+
+```elixir
+part1 = map |> Part1.find_low_points() |> Enum.map(fn {{_x, _y}, h} -> h + 1 end) |> Enum.sum()
+part2 = map |> Part2.basins_size([]) |> Enum.sort(:desc) |> Enum.take(3) |> Enum.product()
+part1 == 603 && part2 == 786_780
+```
+
+## Plot the heightmap of the floor with VegaLite!
+
+[VegaLite
+](https://hexdocs.pm/vega_lite/VegaLite.html)
+
+```elixir
+Mix.install([{:vega_lite, "~> 0.1.2"}, {:kino, "~> 0.4.1"}])
+alias VegaLite, as: Vl
+```
+
+```elixir
+Vl.new(width: 700, height: 700)
+|> Vl.data_from_values(Enum.map(map, fn {{x, y}, h} -> %{"x" => x, "y" => y, "h" => h} end))
+|> Vl.mark(:circle, size: 60, opacity: 0.8)
+|> Vl.encode_field(:x, "x", type: :quantitative, axis: false)
+|> Vl.encode_field(:y, "y", type: :quantitative, axis: false)
+|> Vl.encode_field(:color, "h", type: :quantitative, scale: [range: ["#2d3080", "#1fe8ff"]])
+```
