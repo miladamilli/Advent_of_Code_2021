@@ -1,0 +1,90 @@
+# Advent of Code 2021 - Day 10
+
+## Puzzle description
+
+[Syntax Scoring](https://adventofcode.com/2021/day/10)
+
+## Syntax error in navigation subsystem on all of the lines
+
+```elixir
+input =
+  File.read!("day10.txt")
+  |> String.split("\n", trim: true)
+  |> Enum.map(&String.to_charlist/1)
+```
+
+## Detect corrupted lines
+
+Every chunk must open and close with one of four legal pairs of matching characters:
+
+**() [] {} <>**
+
+A corrupted line is one where a chunk closes with the wrong character.
+
+```elixir
+defmodule Lines do
+  @opening '([{<'
+  @closing ')]}>'
+
+  @chars Enum.zip(@opening, @closing) |> Map.new()
+
+  def parse([first_char | line]), do: parse_run([first_char], line)
+
+  def parse_run(prev, [r | rest]) when r in @opening, do: parse_run([r | prev], rest)
+
+  def parse_run([l | prev], [r | rest]),
+    do: if(chars_match?(l, r), do: parse_run(prev, rest), else: {:corrupted, r})
+
+  def parse_run(prev, []), do: {:incomplete, prev}
+
+  def chars_match?(l, r), do: @chars[l] == r
+end
+```
+
+## Calculate syntax error scores for corrupted lines
+
+Find the first illegal character in each corrupted line.
+
+What is the total syntax error score for those errors?
+
+```elixir
+error_points = %{?) => 3, ?] => 57, ?} => 1197, ?> => 25137}
+
+part1 =
+  input
+  |> Enum.map(&Lines.parse/1)
+  |> Enum.filter(fn {status, _} -> status == :corrupted end)
+  |> Enum.map(fn {:corrupted, char} -> error_points[char] end)
+  |> Enum.sum()
+```
+
+## Figure out closing sequences for incomplete lines & calculate their scores
+
+The score is determined by considering the completion string character-by-character according to _point_ values.
+
+Then sort all the scores and **take the middle score**.
+
+```elixir
+brackets = Enum.zip('([{<', ')]}>') |> Map.new()
+points = %{?) => 1, ?] => 2, ?} => 3, ?> => 4}
+
+scores =
+  input
+  |> Enum.map(&Lines.parse/1)
+  |> Enum.filter(fn {status, _} -> status == :incomplete end)
+  |> Enum.map(fn {:incomplete, string} -> Enum.map(string, fn char -> brackets[char] end) end)
+  |> Enum.map(fn string ->
+    Enum.reduce(string, 0, fn char, score -> score * 5 + points[char] end)
+  end)
+
+part2 =
+  scores
+  |> Enum.sort()
+  |> Enum.at(div(length(scores), 2))
+```
+
+## Check
+
+```elixir
+part1 == 243_939 && part2 == 2_421_222_841
+```
