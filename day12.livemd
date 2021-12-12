@@ -1,0 +1,74 @@
+<!-- vim: syntax=markdown -->
+
+# Advent of Code 2021 - Day 12
+
+## Puzzle description
+
+[Passage Pathing](https://adventofcode.com/2021/day/12)
+
+Oh no, a maze path finding!
+
+## Map of caves
+
+```elixir
+caves_map =
+  File.read!("day12.txt")
+  |> String.split("\n", trim: true)
+  |> Enum.flat_map(fn line ->
+    [a, b] = String.split(line, "-")
+    [{a, b}, {b, a}]
+  end)
+  |> Enum.group_by(fn {cave, _} -> cave end, fn {_from, to} -> to end)
+```
+
+## How many paths through this cave system
+
+when you don't visit small caves more than once?
+
+```elixir
+defmodule Run1 do
+  def paths("end", _visited, _map), do: [true]
+
+  def paths(cave, visited, map) do
+    if small_cave?(cave) and cave in visited,
+      do: [],
+      else: Enum.flat_map(map[cave], fn c -> paths(c, [cave | visited], map) end)
+  end
+
+  def small_cave?(cave), do: cave == String.downcase(cave)
+end
+
+part1 = Run1.paths("start", [], caves_map) |> Enum.count()
+```
+
+## How many paths through this cave system
+
+when you can visit a **single** small cave twice?
+
+```elixir
+defmodule Run2 do
+  def paths("end", _visited, _, _map), do: [true]
+  def paths("start", [_ | _], _, _map), do: []
+
+  def paths(cave, visited, twice?, map) do
+    cond do
+      Run1.small_cave?(cave) and cave in visited and twice? ->
+        []
+
+      Run1.small_cave?(cave) and cave in visited ->
+        Enum.flat_map(map[cave], fn c -> paths(c, visited, true, map) end)
+
+      true ->
+        Enum.flat_map(map[cave], fn c -> paths(c, [cave | visited], twice?, map) end)
+    end
+  end
+end
+
+part2 = Run2.paths("start", [], false, caves_map) |> Enum.count()
+```
+
+## Check that the algo is still working after refactoring
+
+```elixir
+part1 == 5178 && part2 == 130_094
+```
