@@ -1,0 +1,97 @@
+<!-- vim: syntax=markdown -->
+
+# Advent of Code 2021 - Day 13
+
+## Puzzle description
+
+[Transparent Origami](https://adventofcode.com/2021/day/13)
+
+## It would be nice if you could do some kind of thermal imaging
+
+Apparently, the Elves have never used this feature.
+
+To activate the infrared thermal imaging camera system,
+you need do enter the **code found on page 1 of the manual**.
+
+Page 1 of the manual is a large sheet of **transparent paper**!
+
+The transparent paper is marked with random **dots** and includes **instructions**
+on how to fold it up.
+
+```elixir
+[dots_input, instructions_input] = File.read!("day13.txt") |> String.split("\n\n")
+
+dots =
+  dots_input
+  |> String.split("\n", trim: true)
+  |> Enum.map(&String.split(&1, ","))
+  |> Enum.map(fn [x, y] -> {String.to_integer(x), String.to_integer(y)} end)
+
+instructions =
+  instructions_input
+  |> String.split("\n", trim: true)
+  |> Enum.map(fn line ->
+    [instr, value] = String.split(line, "=")
+    {String.at(instr, -1), String.to_integer(value)}
+  end)
+```
+
+## How many dots are visible after completing just the first fold instruction on your transparent paper?
+
+```elixir
+defmodule Fold do
+  def run(fold, dots, fold_line) do
+    Enum.map(dots, fn {x, y} ->
+      cond do
+        fold == "y" and y > fold_line -> {x, fold_line - (y - fold_line)}
+        fold == "x" and x > fold_line -> {fold_line - (x - fold_line), y}
+        true -> {x, y}
+      end
+    end)
+  end
+end
+
+instructions
+|> Enum.take(1)
+|> Enum.reduce(dots, fn {fold, value}, d -> Fold.run(fold, d, value) end)
+|> Enum.uniq()
+|> Enum.count()
+```
+
+## The code
+
+Finish folding the transparent paper according to the instructions.
+
+**What is the code (eight capital letters)** to activate the infrared thermal imaging camera system?
+
+```elixir
+Mix.install([{:vega_lite, "~> 0.1.2"}, {:kino, "~> 0.4.1"}])
+alias VegaLite, as: Vl
+```
+
+```elixir
+paper =
+  Vl.new(width: 900, height: 150)
+  |> Vl.config(view: [stroke: :transparent])
+  |> Vl.mark(:square, opacity: 0.4, size: 900)
+  |> Vl.encode_field(:x, "x", type: :quantitative, axis: false)
+  |> Vl.encode_field(:y, "y", type: :quantitative, axis: false)
+  |> Vl.encode_field(:color, "x",
+    type: :quantitative,
+    scale: [range: ["#27e3c8", "#b25ae7"]],
+    legend: false
+  )
+  |> Kino.VegaLite.new()
+  |> Kino.render()
+
+Enum.reduce(instructions, dots, fn {fold, fold_line}, d ->
+  new_dots = Fold.run(fold, d, fold_line)
+  data_to_plot = Enum.map(new_dots, fn {x, y} -> %{"x" => x, "y" => -y} end)
+  Kino.VegaLite.clear(paper)
+  Kino.VegaLite.push_many(paper, data_to_plot)
+  Process.sleep(350)
+  new_dots
+end)
+
+:ok
+```
