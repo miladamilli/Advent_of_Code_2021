@@ -102,8 +102,7 @@ part1 == 603 && part2 == 786_780
 
 ## Plot the heightmap of the floor with VegaLite!
 
-[VegaLite
-](https://hexdocs.pm/vega_lite/VegaLite.html)
+[VegaLite](https://hexdocs.pm/vega_lite/VegaLite.html)
 
 ```elixir
 Mix.install([{:vega_lite, "~> 0.1.2"}, {:kino, "~> 0.4.1"}])
