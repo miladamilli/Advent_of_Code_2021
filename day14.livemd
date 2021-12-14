@@ -1,0 +1,99 @@
+<!-- vim: syntax=markdown -->
+
+# Advent of Code 2021 - Day 14
+
+## Puzzle description
+
+[Extended Polymerization](https://adventofcode.com/2021/day/14)
+
+## Finding the optimal polymer formula
+
+The submarine manual contains instructions:
+
+a **polymer template** and a list of **pair insertion** rules.
+
+```elixir
+[template, insertion_rules] = File.read!("inputs/day14.txt") |> String.split("\n\n")
+
+template = String.codepoints(template)
+
+rules =
+  insertion_rules
+  |> String.split("\n", trim: true)
+  |> Enum.into(%{}, fn s ->
+    [a, b] = String.split(s, " -> ")
+    {String.codepoints(a), b}
+  end)
+```
+
+## Apply 10 steps of pair insertion to the polymer template
+
+What do you get if you take the quantity of the **most common element in the result** and subtract the quantity of the **least common element**?
+
+```elixir
+defmodule Insert do
+  def run([last], _, acc) do
+    [last | acc]
+    |> Enum.reverse()
+  end
+
+  def run([a, b | list], rules, acc) do
+    new_element = rules[[a, b]]
+    run([b | list], rules, [new_element, a | acc])
+  end
+end
+
+{{_elem1, min}, {_elem2, max}} =
+  1..10
+  |> Enum.reduce(template, fn _, templ -> Insert.run(templ, rules, []) end)
+  |> Enum.frequencies()
+  |> Enum.min_max_by(&elem(&1, 1))
+
+part1 = max - min
+```
+
+## And now apply 40 steps! :-D
+
+What do you get if you take the **quantity of the most common element** and subtract the quantity of the **least common element**?
+
+```elixir
+defmodule Run2 do
+  def parse_template(string) do
+    string
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.reduce(%{}, fn pair, m -> Map.update(m, pair, 1, &(&1 + 1)) end)
+  end
+
+  def run(map, rules) do
+    Enum.reduce(map, %{}, fn {[a, b], value}, m ->
+      new_elem = rules[[a, b]]
+
+      Map.update(m, [a, new_elem], value, &(&1 + value))
+      |> Map.update([new_elem, b], value, &(&1 + value))
+    end)
+  end
+end
+
+parsed_template = Run2.parse_template(template)
+
+{{_, min}, {_, max}} =
+  1..40
+  |> Enum.reduce(parsed_template, fn _step, template -> Run2.run(template, rules) end)
+  |> Enum.reduce(%{}, fn {[e1, e2], value}, m ->
+    # count individual elements
+    Map.update(m, e1, value, &(&1 + value))
+    |> Map.update(e2, value, &(&1 + value))
+  end)
+  |> Map.update!(List.first(template), &(&1 + 1))
+  |> Map.update!(List.last(template), &(&1 + 1))
+  |> Enum.map(fn {elem, count} -> {elem, div(count, 2)} end)
+  |> Enum.min_max_by(fn {_elem, count} -> count end)
+
+part2 = max - min
+```
+
+## Check
+
+```elixir
+part1 == 2003 && part2 == 2_276_644_000_111
+```
