@@ -12,7 +12,7 @@ They tend to form in **lines**.
 
 ```elixir
 vent_lines =
-  File.read!("day05.txt")
+  File.read!("inputs/day05.txt")
   |> String.split("\n", trim: true)
   |> Enum.map(fn line ->
     [point1, point2] = String.split(line, " -> ")

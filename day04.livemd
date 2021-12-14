@@ -15,12 +15,12 @@ If all numbers in any row or any column of a board are marked, that board wins.
 ## The submarine's bingo subsystem generates a random order in which to draw numbers and a random set of boards
 
 ```elixir
-numbers = File.read!("day04_numbers.txt") |> String.trim() |> String.split(",")
+numbers = File.read!("inputs/day04_numbers.txt") |> String.trim() |> String.split(",")
 ```
 
 ```elixir
 boards =
-  File.read!("day04_boards.txt")
+  File.read!("inputs/day04_boards.txt")
   |> String.split("\n\n", trim: true)
   |> Enum.map(&String.split(&1, "\n", trim: true))
   |> Enum.map(&Enum.map(&1, fn board_line -> String.split(board_line, " ", trim: true) end))

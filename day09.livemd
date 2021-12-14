@@ -10,7 +10,7 @@
 
 ```elixir
 heightmap =
-  File.read!("day09.txt")
+  File.read!("inputs/day09.txt")
   |> String.split("\n", trim: true)
   |> Enum.map(fn line -> String.codepoints(line) |> Enum.map(&String.to_integer/1) end)
 

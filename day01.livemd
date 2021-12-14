@@ -11,7 +11,7 @@
 ```elixir
 defmodule Load do
   def input do
-    File.read!("day01.txt")
+    File.read!("inputs/day01.txt")
     |> String.split("\n", trim: true)
     |> Enum.map(&String.to_integer/1)
   end

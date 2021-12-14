@@ -16,7 +16,7 @@ and then write down a single **four digit output value**.
 
 ```elixir
 input =
-  File.read!("day08.txt")
+  File.read!("inputs/day08.txt")
   |> String.split("\n", trim: true)
   |> Enum.map(&String.split(&1, [" ", " | "]))
 ```

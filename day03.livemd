@@ -13,7 +13,7 @@ List of binary numbers which, when decoded properly, can tell you many useful th
 ```elixir
 defmodule Load do
   def input do
-    File.read!("day03.txt")
+    File.read!("inputs/day03.txt")
     |> String.split("\n", trim: true)
   end
 end

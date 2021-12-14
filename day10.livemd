@@ -10,7 +10,7 @@
 
 ```elixir
 input =
-  File.read!("day10.txt")
+  File.read!("inputs/day10.txt")
   |> String.split("\n", trim: true)
   |> Enum.map(&String.to_charlist/1)
 ```

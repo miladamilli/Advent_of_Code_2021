@@ -12,7 +12,7 @@ Oh no, a maze path finding!
 
 ```elixir
 caves_map =
-  File.read!("day12.txt")
+  File.read!("inputs/day12.txt")
   |> String.split("\n", trim: true)
   |> Enum.flat_map(fn line ->
     [a, b] = String.split(line, "-")

@@ -19,7 +19,7 @@ The transparent paper is marked with random **dots** and includes **instructions
 on how to fold it up.
 
 ```elixir
-[dots_input, instructions_input] = File.read!("day13.txt") |> String.split("\n\n")
+[dots_input, instructions_input] = File.read!("inputs/day13.txt") |> String.split("\n\n")
 
 dots =
   dots_input

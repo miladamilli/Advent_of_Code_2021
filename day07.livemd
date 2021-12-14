@@ -12,7 +12,7 @@ Suddenly, a swarm of crabs (each in its own tiny submarine) zooms in to rescue y
 
 ```elixir
 crabs_positions =
-  File.read!("day07.txt")
+  File.read!("inputs/day07.txt")
   |> String.trim()
   |> String.split(",")
   |> Enum.map(&String.to_integer/1)
